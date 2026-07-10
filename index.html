@@ -457,7 +457,7 @@
     let last  = performance.now();
     let start = performance.now();
     let points = 0;
-    let playerHP = 8;
+    let playerHP = 10;       // Más vida
     let enemyHP  = 3;
     let secretUnlocked = false;
     let secretMode = false;
@@ -487,15 +487,15 @@
       anim: 0, walkFrame: 0
     };
 
-    // Hero: ahora con patrón de descenso periódico y más lento
+    // Hero: más lento, baja más abajo, y con patrón de fases
     const hero = {
       x: 520, y: 88, w: 24, h: 20,
-      vx: -0.35, vy: 0, t: 0, dive: 0,
+      vx: -0.25, vy: 0, t: 0, dive: 0,
       anim: 0, hitFlash: 0,
-      phase: 0,        // 0: alto, 1: bajando, 2: bajo, 3: subiendo
+      phase: 0,
       phaseTimer: 0,
       baseY: 88,
-      lowY: H - 110,  // altura baja donde es atacable
+      lowY: H - 90,   // BAJA BIEN ABAJO (cerca del suelo)
       targetY: 88
     };
 
@@ -524,7 +524,7 @@
     initDecor();
 
     function resetGame(){
-      points = 0; playerHP = 8; enemyHP = 3;
+      points = 0; playerHP = 10; enemyHP = 3;
       secretUnlocked = false; secretMode = false; secretDone = false;
       attackCooldown = 0; lightOrbs = 0; notice = 0; noticeText = '';
       grass = 0; shake = 0; combo = 0; comboTimer = 0; screenFlash = 0;
@@ -534,8 +534,8 @@
       player.onGround = true; player.facing = 1;
 
       hero.x = 520; hero.y = 88;
-      hero.vx = -0.35; hero.vy = 0; hero.t = 0; hero.dive = 0; hero.hitFlash = 0;
-      hero.phase = 0; hero.phaseTimer = 0; hero.baseY = 88; hero.lowY = H - 110; hero.targetY = 88;
+      hero.vx = -0.25; hero.vy = 0; hero.t = 0; hero.dive = 0; hero.hitFlash = 0;
+      hero.phase = 0; hero.phaseTimer = 0; hero.baseY = 88; hero.lowY = H - 90; hero.targetY = 88;
 
       enemyBullets.length = 0; playerBullets.length = 0;
       particles.length = 0; orbs.length = 0;
@@ -550,11 +550,11 @@
 
     function spawnEnemyBolt(){
       const top = hero.y + 4;
-      const speed = 1.6 + Math.random() * 1.0 + (secretMode ? 0.6 : 0);
+      const speed = 1.2 + Math.random() * 0.6 + (secretMode ? 0.4 : 0);
       enemyBullets.push({
         x: hero.x + 8, y: top,
         vx: -speed,
-        vy: (player.y - top) * 0.02,
+        vy: (player.y - top) * 0.015,
         life: 180,
         type: 'bolt'
       });
@@ -563,10 +563,10 @@
     function spawnOrb(){
       orbs.push({
         x: 80 + Math.random() * (W - 160),
-        y: 40 + Math.random() * 140,
+        y: 40 + Math.random() * 160,
         w: 10, h: 10,
-        vy: 0.3 + Math.random() * 0.3,
-        life: 400,
+        vy: 0.25 + Math.random() * 0.25,
+        life: 500,
         t: 0,
         pulse: Math.random() * Math.PI
       });
@@ -635,13 +635,27 @@
         burst(player.x + 10, player.y + 16, 8, '#7fd3ff');
       }
 
+      // DISPARO GUIADO: apunta automáticamente hacia el héroe
       if(action === 'attack' && attackCooldown <= 0 && !secretMode){
         if(lightOrbs > 0){
-          attackCooldown = 22;
+          attackCooldown = 20;
           lightOrbs--;
-          const bx = player.x + player.facing * 14;
+
+          const bx = player.x + 10;
           const by = player.y + 10;
-          playerBullets.push({ x: bx, y: by, vx: 6.0 * player.facing, life: 90 });
+
+          // Calcular vector hacia el héroe
+          const dx = (hero.x + 10) - bx;
+          const dy = (hero.y + 10) - by;
+          const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+          const speed = 6.5;
+
+          playerBullets.push({ 
+            x: bx, y: by, 
+            vx: (dx / dist) * speed, 
+            vy: (dy / dist) * speed, 
+            life: 120 
+          });
           burst(bx, by, 4, '#f0e36a');
         } else {
           notice = 50; noticeText = 'SIN ESFERAS — RECOGE LUZ';
@@ -825,14 +839,14 @@
       }
       if(keys.has('down') || heldButtons.has('down')) player.vy += 0.8;
 
-      // Secret mode trigger
-      if(t > 300 && !secretUnlocked && !secretDone){
+      // Secret mode trigger (3 minutos para que sea más fácil)
+      if(t > 180 && !secretUnlocked && !secretDone){
         secretMode = true; notice = 140; noticeText = 'MODO SECRETO: ROBA 3 PASTOS!';
         screenShake(6); burst(W/2, H/2, 30, '#4a7a20');
       }
 
       if(secretMode) points += dt * 3;
-      else points += dt * 8;
+      else points += dt * 10;
 
       if(comboTimer > 0) comboTimer -= dt;
       else combo = 0;
@@ -861,25 +875,19 @@
       player.x = Math.max(8, Math.min(W - 28, player.x));
 
       // ============================================================
-      //  HERO MOVEMENT — ahora más lento y baja periódicamente
+      //  HERO MOVEMENT — más lento, baja más abajo, fases más largas
       // ============================================================
       hero.t += dt;
       hero.anim += dt;
 
-      // Movimiento horizontal más lento
       hero.x += hero.vx;
-      if(hero.x < 350) hero.vx = 0.45;
-      if(hero.x > 580) hero.vx = -0.45;
+      if(hero.x < 360) hero.vx = 0.35;
+      if(hero.x > 580) hero.vx = -0.35;
 
-      // Patrón de fases: alto -> bajando -> bajo -> subiendo
       hero.phaseTimer += dt;
 
-      // Fase 0: alto (3-5 segundos)
-      // Fase 1: bajando (1.5 segundos)
-      // Fase 2: bajo (2-3 segundos) — atacable!
-      // Fase 3: subiendo (1.5 segundos)
-
-      const phaseDurations = [4.0, 1.5, 2.5, 1.5]; // segundos por fase
+      // Fases más largas para que sea más fácil
+      const phaseDurations = [5.0, 2.0, 4.0, 2.0]; // más tiempo bajo y arriba
       const currentPhaseDuration = phaseDurations[hero.phase];
 
       if(hero.phaseTimer >= currentPhaseDuration) {
@@ -887,36 +895,34 @@
         hero.phaseTimer = 0;
       }
 
-      // Transiciones suaves de altura según la fase
       switch(hero.phase) {
         case 0: // alto
-          hero.targetY = hero.baseY + Math.sin(hero.t * 1.8) * 18;
+          hero.targetY = hero.baseY + Math.sin(hero.t * 1.5) * 15;
           break;
         case 1: // bajando
           hero.targetY = hero.lowY + (hero.baseY - hero.lowY) * (1 - hero.phaseTimer / phaseDurations[1]);
           break;
-        case 2: // bajo — aquí es vulnerable!
-          hero.targetY = hero.lowY + Math.sin(hero.t * 2.0) * 8;
+        case 2: // bajo — ¡vulnerable!
+          hero.targetY = hero.lowY + Math.sin(hero.t * 1.8) * 6;
           break;
         case 3: // subiendo
           hero.targetY = hero.lowY + (hero.baseY - hero.lowY) * (hero.phaseTimer / phaseDurations[3]);
           break;
       }
 
-      // Interpolación suave hacia targetY
-      hero.y += (hero.targetY - hero.y) * 0.06;
+      hero.y += (hero.targetY - hero.y) * 0.05;
 
-      // Disparos del héroe (más lentos y desde donde esté)
-      if(Math.random() < 0.012 + (secretMode ? 0.008 : 0)){
+      // Disparos enemigos más raros y lentos
+      if(Math.random() < 0.008 + (secretMode ? 0.005 : 0)){
         spawnEnemyBolt();
       }
 
-      // Orbs spawn
-      if(!secretMode && Math.random() < 0.007 && orbs.length < 5){
+      // Orbs spawn más frecuentes
+      if(!secretMode && Math.random() < 0.012 && orbs.length < 6){
         spawnOrb();
       }
 
-      // Enemy bullets
+      // Enemy bullets (más lentas)
       enemyBullets.forEach(b => { b.x += b.vx; b.y += b.vy; b.life--; });
       for(let i = enemyBullets.length - 1; i >= 0; i--){
         const b = enemyBullets[i];
@@ -926,8 +932,8 @@
         if(player.inv <= 0){
           const hit = { x: b.x - 3, y: b.y - 3, w: 6, h: 6 };
           if(rectsOverlap(hit, player)){
-            playerHP--; burst(b.x, b.y, 12, '#d16f5e');
-            player.inv = 40; screenShake(5); screenFlash = 1;
+            playerHP--; burst(b.x, b.y, 10, '#d16f5e');
+            player.inv = 30; screenShake(3); screenFlash = 0.6;
             enemyBullets.splice(i, 1);
             combo = 0;
             if(playerHP <= 0){ gameState = STATE.OVER; notice = 0; }
@@ -935,11 +941,11 @@
         }
       }
 
-      // Player bullets
-      playerBullets.forEach(b => { b.x += b.vx; b.life--; });
+      // Player bullets (ahora con vy también, guiados)
+      playerBullets.forEach(b => { b.x += b.vx; b.y += b.vy; b.life--; });
       for(let i = playerBullets.length - 1; i >= 0; i--){
         const b = playerBullets[i];
-        if(b.life <= 0 || b.x < -30 || b.x > W + 30){
+        if(b.life <= 0 || b.x < -30 || b.x > W + 30 || b.y < -30 || b.y > H + 30){
           playerBullets.splice(i, 1); continue;
         }
         const hit = { x: b.x - 3, y: b.y - 3, w: 6, h: 6 };
@@ -947,13 +953,13 @@
           enemyHP--; burst(b.x, b.y, 16, '#7fd3ff');
           hero.hitFlash = 10; screenShake(3);
           playerBullets.splice(i, 1);
-          combo++; comboTimer = 120;
-          points += 120 + combo * 30;
+          combo++; comboTimer = 150;
+          points += 150 + combo * 40;
           if(enemyHP <= 0){
-            points += 600 + combo * 50;
-            enemyHP = 3; playerHP = Math.min(8, playerHP + 2);
+            points += 800 + combo * 60;
+            enemyHP = 3; playerHP = Math.min(10, playerHP + 3);
             burst(hero.x + 10, hero.y + 10, 28, '#e8d27a');
-            screenShake(6); screenFlash = 1;
+            screenShake(5); screenFlash = 0.8;
             hero.vx *= -1; hero.hitFlash = 20;
             notice = 70; noticeText = 'ENEMIGO DERROTADO! x' + combo;
           }
@@ -968,24 +974,24 @@
           orbs.splice(i, 1); continue;
         }
         if(rectsOverlap(o, player)){
-          lightOrbs = Math.min(9, lightOrbs + 1);
-          points += 60 + combo * 10;
+          lightOrbs = Math.min(12, lightOrbs + 1);
+          points += 80 + combo * 15;
           burst(o.x, o.y, 10, '#f0e36a');
           orbs.splice(i, 1);
         }
       }
 
-      // Hero dive (ahora más raro y lento)
-      if(!secretMode && Math.random() < 0.006){
+      // Hero dive (muy raro y lento)
+      if(!secretMode && Math.random() < 0.003){
         hero.dive = 1;
       }
       if(hero.dive){
-        hero.y += (player.y - hero.y) * 0.03;
-        hero.x += (player.x - hero.x) * 0.015;
+        hero.y += (player.y - hero.y) * 0.02;
+        hero.x += (player.x - hero.x) * 0.01;
         if(Math.abs(hero.x - player.x) < 20 && Math.abs(hero.y - player.y) < 20){
           if(player.inv <= 0){
-            playerHP--; player.inv = 45; screenShake(6); screenFlash = 1;
-            burst(player.x + 10, player.y + 10, 14, '#d16f5e'); combo = 0;
+            playerHP--; player.inv = 35; screenShake(4); screenFlash = 0.6;
+            burst(player.x + 10, player.y + 10, 12, '#d16f5e'); combo = 0;
             if(playerHP <= 0) gameState = STATE.OVER;
           }
           hero.dive = 0;
@@ -994,7 +1000,7 @@
 
       // Secret mode grass
       if(secretMode){
-        grassPatch.x -= 2.8;
+        grassPatch.x -= 2.2;
         if(grassPatch.x < -50){
           grassPatch.x = W + 140 + Math.random() * 100;
           grassPatch.taken = false;
@@ -1155,7 +1161,7 @@
         ctx.fillText('PASTO!', grassPatch.x + 10, grassPatch.y - 8);
       }
 
-      drawBar(8, 20, 110, 7, playerHP, 8, '#d16f5e', '#3a1510', 'VIKTOR');
+      drawBar(8, 20, 110, 7, playerHP, 10, '#d16f5e', '#3a1510', 'VIKTOR');
       drawBar(W - 118, 20, 110, 7, enemyHP, 3, '#7fd3ff', '#0f1a2a', '???');
 
       ctx.fillStyle = '#0a0f05';
@@ -1212,7 +1218,7 @@
         ctx.font = '12px monospace';
         ctx.fillStyle = '#cde28a';
         ctx.fillText('Eres Viktor. Esquiva al volador, recoge luz, dispara.', W / 2, H / 2 - 35);
-        ctx.fillText('Sobrevive 5 minutos para el modo secreto de pasto.', W / 2, H / 2 - 18);
+        ctx.fillText('Sobrevive 3 minutos para el modo secreto de pasto.', W / 2, H / 2 - 18);
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px monospace';
         ctx.fillText('Pulsa LUZ / ESPACIO para empezar', W / 2, H / 2 + 20);
