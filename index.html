@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Necio</title>
+  <style>
+    :root{
+      --bg:#0c0f10;
+      --panel1:#2d2f31;
+      --panel2:#1c1e20;
+      --metal1:#4b4f53;
+      --metal2:#232629;
+      --metal3:#6d7277;
+      --screen:#6d7f30;
+      --screen2:#566628;
+      --screenGlow:#a7c46a;
+      --text:#e9efe0;
+      --btn:#3a3d41;
+      --btn2:#222529;
+      --btnHi:#5a5f65;
+      --accent:#9fbf4d;
+      --danger:#d16f5e;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:#101214;font-family:Arial,Helvetica,sans-serif;color:var(--text);overflow:hidden}
+    body{
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at 20% 20%, #1b1f24 0, #0e1012 35%, #08090a 100%);
+    }
+
+    .stage{
+      width:min(96vw, 1100px);
+      height:min(96vh, 760px);
+      position:relative;
+      display:grid;
+      place-items:center;
+      padding:16px;
+    }
+
+    .wallpaper{
+      position:absolute; inset:0;
+      background: var(--user-bg, none);
+      background-size:cover;
+      background-position:center;
+      filter: saturate(.8) contrast(.9) blur(0px);
+      opacity:.18;
+      border-radius:26px;
+    }
+
+    .calc{
+      width:min(100%, 980px);
+      height:min(100%, 700px);
+      background:
+        linear-gradient(145deg, #5c6166 0%, #2c2f33 18%, #181a1d 45%, #44484d 100%);
+      border-radius:34px;
+      padding:22px;
+      position:relative;
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.55),
+        inset 0 2px 0 rgba(255,255,255,.15),
+        inset 0 -8px 20px rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .calc:before{
+      content:"";
+      position:absolute; inset:12px;
+      border-radius:26px;
+      border:1px solid rgba(255,255,255,.06);
+      pointer-events:none;
+    }
+
+    .brand{
+      position:absolute;
+      left:34px; top:18px;
+      font-weight:700;
+      letter-spacing:.18em;
+      font-size:14px;
+      color:#ced4d8;
+      text-shadow:0 1px 0 #000;
+    }
+
+    .logo{
+      position:absolute;
+      right:34px; top:18px;
+      font-size:12px;
+      color:#aeb4b8;
+      letter-spacing:.12em;
+    }
+
+    .screen-shell{
+      height:44%;
+      border-radius:24px;
+      padding:14px;
+      background:
+        linear-gradient(180deg, #101214 0%, #2b2f33 25%, #111315 100%);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.08),
+        inset 0 -3px 10px rgba(0,0,0,.65);
+      margin-top:20px;
+    }
+
+    .screen-frame{
+      height:100%;
+      border-radius:18px;
+      background:linear-gradient(135deg, #41454a, #1f2225);
+      padding:10px;
+      position:relative;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.06);
+    }
+
+    .screen{
+      position:relative;
+      width:100%;
+      height:100%;
+      border-radius:12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+        radial-gradient(circle at 50% 40%, rgba(173,202,111,.18), transparent 55%),
+        linear-gradient(180deg, var(--screen), var(--screen2));
+      overflow:hidden;
+      box-shadow:
+        inset 0 0 0 3px rgba(0,0,0,.55),
+        inset 0 0 24px rgba(0,0,0,.45),
+        0 0 0 1px rgba(255,255,255,.08);
+      image-rendering: pixelated;
+    }
+
+    .screen:before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(rgba(255,255,255,.02) 50%, rgba(0,0,0,.05) 50%);
+      background-size:100% 6px;
+      opacity:.35;
+      mix-blend-mode:soft-light;
+      pointer-events:none;
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      image-rendering: pixelated;
+    }
+
+    .hud{
+      position:absolute;
+      inset:10px 12px auto 12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-family: "Courier New", monospace;
+      font-size:12px;
+      color:#141813;
+      text-shadow:0 1px 0 rgba(255,255,255,.25);
+      pointer-events:none;
+      z-index:2;
+    }
+
+    .hud span{
+      background:rgba(217,231,180,.55);
+      padding:3px 6px;
+      border-radius:4px;
+      border:1px solid rgba(0,0,0,.12);
+    }
+
+    .controls{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+      height:calc(56% - 16px);
+    }
+
+    .pad{
+      background:linear-gradient(145deg, #32363a, #17191c);
+      border-radius:24px;
+      padding:18px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -8px 18px rgba(0,0,0,.55);
+      position:relative;
+      min-height:0;
+    }
+
+    .pad-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+      color:#bcc2c7;
+      font-size:12px;
+      letter-spacing:.18em;
+    }
+
+    .btn-grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      height:calc(100% - 28px);
+    }
+
+    button{
+      border:0;
+      color:#f3f3f3;
+      font-weight:700;
+      letter-spacing:.04em;
+      border-radius:14px;
+      background:
+        linear-gradient(180deg, var(--btnHi), var(--btn2));
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.08),
+        inset 0 -5px 0 rgba(0,0,0,.45),
+        0 4px 10px rgba(0,0,0,.32);
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      transform:translateY(0);
+      transition:transform .08s ease, filter .08s ease;
+      font-size:14px;
+    }
+    button:active{
+      transform:translateY(2px);
+      filter:brightness(1.1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -2px 0 rgba(0,0,0,.5),
+        0 2px 6px rgba(0,0,0,.25);
+    }
+
+    .btn-a{background:linear-gradient(180deg,#55604f,#303629)}
+    .btn-b{background:linear-gradient(180deg,#5b4f2a,#2f2917)}
+    .btn-c{background:linear-gradient(180deg,#5a3540,#2f1a20)}
+    .btn-d{background:linear-gradient(180deg,#435d61,#1e2c2f)}
+
+    .side{
+      display:grid;
+      gap:12px;
+      grid-template-rows:auto auto 1fr;
+      min-height:0;
+    }
+
+    .panel{
+      background:linear-gradient(145deg, #2f3337, #181a1d);
+      border-radius:20px;
+      padding:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -8px 18px rgba(0,0,0,.45);
+    }
+
+    .mini{
+      display:grid;
+      gap:10px;
+      font-size:12px;
+      color:#c7ccd0;
+    }
+
+    .file{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    input[type="file"]{
+      max-width:100%;
+      color:#dfe5ea;
+      font-size:12px;
+    }
+
+    .story{
+      font-size:12px;
+      line-height:1.45;
+      color:#d2d6da;
+    }
+
+    .story b{color:#fff}
+    .secret{
+      color:#b9e06a;
+      font-weight:700;
+    }
+
+    @media (max-width: 880px){
+      body{overflow:auto}
+      .stage{height:auto; padding:12px}
+      .calc{height:auto; min-height:900px}
+      .controls{grid-template-columns:1fr; height:auto}
+      .screen-shell{height:360px}
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="wallpaper" id="wallpaper"></div>
+    <div class="calc">
+      <div class="brand">CALCULADORA NECIO</div>
+      <div class="logo">RETRO COMBAT SYSTEM</div>
+
+      <div class="screen-shell">
+        <div class="screen-frame">
+          <div class="screen">
+            <div class="hud">
+              <span id="hudLeft">VIKTOR VS HEROE</span>
+              <span id="hudCenter">PTS 000000</span>
+              <span id="hudRight">TIEMPO 00:00</span>
+            </div>
+            anvas id="game" width="640" height="320"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="pad">
+          <div class="pad-title"><span>MANDOS</span><span>BOTONES REASIGNADOS</span></div>
+          <div class="btn-grid">
+            <button class="btn-a" data-action="left">◀</button>
+            <button class="btn-a" data-action="up">▲</button>
+            <button class="btn-a" data-action="right">▶</button>
+            <button class="btn-b" data-action="attack">LUZ</button>
+
+            <button class="btn-c" data-action="dash">DASH</button>
+            <button class="btn-d" data-action="grab">CAPTURAR</button>
+            <button class="btn-d" data-action="menu">PAUSA</button>
+            <button class="btn-b" data-action="special">SILBIDO</button>
+
+            <button class="btn-a" data-action="left">◀◀</button>
+            <button class="btn-a" data-action="down">▼</button>
+            <button class="btn-a" data-action="right">▶▶</button>
+            <button class="btn-c" data-action="restart">RESET</button>
+          </div>
+        </div>
+
+        <div class="side">
+          <div class="panel mini">
+            <div class="file">
+              abel for="bgUpload">Fondo personalizable:</label>
+              <input id="bgUpload" type="file" accept="image/*">
+            </div>
+            <div>Sube una imagen para usarla como fondo detrás de la calculadora.</div>
+          </div>
+
+          <div class="panel story">
+            <b>Historia:</b> Viktor es el villano. El héroe vuela y lanza ataques desde arriba, así que tu tarea es esquivar, cerrar distancia y atrapar momentos de luz para contraatacar. Cada tanto aparecen esferas luminosas que sirven para disparar al héroe. Si sobrevives 5 minutos seguidos, aparece el modo secreto: Viktor debe ir por pasto de cancha para cocinarle la cena perfecta a sus robots vegetarianos. El objetivo cambia, pero el control sigue siendo el mismo.
+            <br><br>
+            <span class="secret">Nivel secreto: roba pasto, esquiva al guardia y completa la entrega.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const hudLeft = document.getElementById('hudLeft');
+    const hudCenter = document.getElementById('hudCenter');
+    const hudRight = document.getElementById('hudRight');
+    const wallpaper = document.getElementById('wallpaper');
+
+    const W = canvas.width, H = canvas.height;
+    const keys = new Set();
+    let running = true, last = performance.now(), start = performance.now(), paused = false;
+    let points = 0, heroHP = 8, villainHP = 3, secretUnlocked = false, secretMode = false;
+    let attackCooldown = 0, spawnLight = 0, enemyTimer = 0, captureTimer = 0, grass = 0, notice = 0;
+    const enemyBullets = [], playerBullets = [], particles = [], clouds = [], fences = [];
+
+    const player = {x:120, y:H-72, w:20, h:22, vx:0, vy:0, onGround:true, dash:0, inv:0, facing:1};
+    const hero = {x:520, y:88, w:24, h:20, vx:-0.7, vy:0, t:0, dive:0};
+    const grassPatch = {x:W+30, y:H-50, w:74, h:18, taken:false};
+
+    for(let i=0;i<5;i++) clouds.push({x:Math.random()*W, y:20+Math.random()*80, s:.5+Math.random()*.7});
+    for(let i=0;i<6;i++) fences.push({x:i*110, y:H-28, w:60+Math.random()*35});
+
+    function resetGame(){
+      points = 0; heroHP = 8; villainHP = 3; secretUnlocked = false; secretMode = false;
+      attackCooldown = 0; spawnLight = 0; enemyTimer = 0; captureTimer = 0; grass = 0; notice = 0;
+      player.x = 120; player.y = H-72; player.vx = player.vy = player.dash = player.inv = 0; player.onGround = true;
+      hero.x = 520; hero.y = 88; hero.vx = -0.7; hero.vy = 0; hero.t = 0; hero.dive = 0;
+      enemyBullets.length = 0; playerBullets.length = 0; particles.length = 0;
+      grassPatch.x = W+30; grassPatch.taken = false;
+    }
+
+    function input(action){
+      if(action==='restart') resetGame();
+      if(action==='menu') paused = !paused;
+      if(paused) return;
+      if(action==='left') player.vx = -2.2, player.facing = -1;
+      if(action==='right') player.vx = 2.2, player.facing = 1;
+      if(action==='up' && player.onGround){ player.vy = -6.5; player.onGround = false; }
+      if(action==='down') player.vy += 1.6;
+      if(action==='dash' && player.dash<=0){ player.dash = 28; player.inv = 10; player.vx = 5.5*player.facing; }
+      if(action==='attack' && attackCooldown<=0 && !secretMode){
+        attackCooldown = 26;
+        playerBullets.push({x:player.x + player.facing*14, y:player.y+10, vx:5.5*player.facing, life:80});
+      }
+      if(action==='special' && notice<=0){
+        notice = 60;
+        player.inv = 18;
+      }
+      if(action==='grab' && secretMode && Math.abs(player.x-grassPatch.x)<30 && Math.abs(player.y-grassPatch.y)<24){
+        grassPatch.taken = true;
+        grass += 1;
+        points += 250;
+        if(grass >= 3){
+          secretMode = false;
+          secretUnlocked = true;
+          points += 1000;
+          notice = 160;
+        }
+      }
+    }
+
+    document.querySelectorAll('button[data-action]').forEach(btn=>{
+      const a = btn.dataset.action;
+      btn.addEventListener('click', ()=>input(a));
+    });
+
+    window.addEventListener('keydown', e=>{
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+      if(e.key==='ArrowLeft') keys.add('left');
+      if(e.key==='ArrowRight') keys.add('right');
+      if(e.key==='ArrowUp') keys.add('up');
+      if(e.key==='ArrowDown') keys.add('down');
+      if(e.key===' ') keys.add('attack');
+      if(e.key==='Shift') keys.add('dash');
+      if(e.key==='Enter') input('menu');
+      if(e.key==='r') input('restart');
+    });
+    window.addEventListener('keyup', e=>{
+      keys.delete({
+        ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down', ' ':'attack', Shift:'dash'
+      }[e.key] || '');
+    });
+
+    document.getElementById('bgUpload').addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => wallpaper.style.setProperty('--user-bg', `url('${ev.target.result}')`);
+      reader.readAsDataURL(file);
+    });
+
+    function rects(a,b){
+      return a.x<a.x+a.w && b.x<b.x+b.w && a.x<a.x+a.w && a.x+a.w>b.x && a.y<a.y+a.h && a.y+a.h>b.y && a.x<b.x+b.w && a.y<b.y+b.h;
+    }
+
+    function spawnEnemyBolt(){
+      const top = 24 + Math.random()*100;
+      enemyBullets.push({x:hero.x, y:top, vx:-2.2 - Math.random()*1.2, vy:(player.y-top)*0.03, life:150});
+    }
+
+    function burst(x,y,c){
+      for(let i=0;i;i++) particles.push({x,y,vx:(Math.random()-.5)*3, vy:(Math.random()-.5)*3, life:30+Math.random()*20});
+    }
+
+    function drawPixelChar(x,y,kind){
+      ctx.fillStyle = '#111';
+      if(kind==='viktor'){
+        ctx.fillRect(x+4,y+2,8,4); ctx.fillRect(x+2,y+6,12,8); ctx.fillRect(x+4,y+14,8,6);
+        ctx.fillRect(x+0,y+8,2,5); ctx.fillRect(x+14,y+8,2,5); ctx.fillRect(x+6,y+9,2,2);
+      } else {
+        ctx.fillRect(x+4,y+2,10,4); ctx.fillRect(x+2,y+6,14,8); ctx.fillRect(x+5,y+14,8,6);
+        ctx.fillRect(x+1,y+9,2,7); ctx.fillRect(x+15,y+9,2,7); ctx.fillRect(x+7,y+9,2,2);
+      }
+    }
+
+    function update(dt){
+      if(paused) return;
+      const t = (performance.now()-start)/1000;
+      if(t > 300 && !secretUnlocked) secretMode = true;
+      if(secretMode) points += dt*2; else points += dt*6;
+
+      player.vx *= 0.85;
+      player.x += player.vx;
+      player.y += player.vy;
+      player.vy += 0.34;
+      if(player.dash>0) player.dash--;
+      if(player.inv>0) player.inv--;
+      if(attackCooldown>0) attackCooldown--;
+      if(notice>0) notice--;
+
+      if(player.y > H-72){ player.y = H-72; player.vy = 0; player.onGround = true; }
+      player.x = Math.max(10, Math.min(W-30, player.x));
+
+      hero.t += dt;
+      hero.y = 72 + Math.sin(hero.t*2.6)*26;
+      hero.x += hero.vx;
+      if(hero.x < 330) hero.vx = 1.2;
+      if(hero.x > 570) hero.vx = -1.2;
+      if(Math.random() < 0.018 + (secretMode?0.01:0)) spawnEnemyBolt();
+
+      enemyBullets.forEach(b=>{ b.x += b.vx; b.y += b.vy; b.life--; });
+      playerBullets.forEach(b=>{ b.x += b.vx; b.life--; });
+      for(let i=enemyBullets.length-1;i>=0;i--){
+        const b = enemyBullets[i];
+        if(b.life<=0 || b.x<-20 || b.x>W+20 || b.y<-20 || b.y>H+20) enemyBullets.splice(i,1);
+        else if(player.inv<=0 && b.x>player.x && b.x<player.x+player.w && b.y>player.y && b.y<player.y+player.h){
+          heroHP--;
+          burst(b.x,b.y,10);
+          player.inv = 35;
+          enemyBullets.splice(i,1);
+        }
+      }
+      for(let i=playerBullets.length-1;i>=0;i--){
+        const b = playerBullets[i];
+        if(b.life<=0 || b.x<-20 || b.x>W+20) playerBullets.splice(i,1);
+        else if(b.x>hero.x && b.x<hero.x+hero.w && b.y>hero.y && b.y<hero.y+hero.h){
+          villainHP--;
+          burst(b.x,b.y,14);
+          playerBullets.splice(i,1);
+          points += 120;
+          if(villainHP<=0){
+            points += 500;
+            villainHP = 3;
+            heroHP = 8;
+            burst(hero.x+10,hero.y+10,24);
+            hero.vx *= -1;
+          }
+        }
+      }
+
+      if(heroHP<=0){
+        heroHP = 8;
+        points += 800;
+      }
+
+      if(!secretMode && Math.random()<0.01){
+        hero.dive = 1;
+      }
+      if(hero.dive){
+        hero.y += (player.y - hero.y) * 0.05;
+        hero.x += (player.x - hero.x) * 0.03;
+        if(Math.abs(hero.x-player.x)<18 && Math.abs(hero.y-player.y)<18 && player.inv<=0){
+          player.inv = 40;
+        }
+      }
+
+      if(secretMode){
+        grassPatch.x -= 2.6;
+        if(grassPatch.x < -40){ grassPatch.x = W + 120; grassPatch.taken = false; }
+      }
+
+      particles.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life--; });
+      for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
+
+      if(keys.has('left')) input('left');
+      if(keys.has('right')) input('right');
+      if(keys.has('up')) input('up'), keys.delete('up');
+      if(keys.has('down')) input('down');
+      if(keys.has('attack')) input('attack'), keys.delete('attack');
+      if(keys.has('dash')) input('dash'), keys.delete('dash');
+
+      clouds.forEach(c=>{ c.x -= 0.15*c.s; if(c.x < -30) c.x = W+40, c.y = 20+Math.random()*90; });
+      if(secretMode) hudLeft.textContent = 'MODO SECRETO: PASTO';
+      else hudLeft.textContent = 'VIKTOR VS HEROE';
+      hudCenter.textContent = 'PTS ' + String(Math.floor(points)).padStart(6,'0');
+      hudRight.textContent = 'TIEMPO ' + String(Math.floor(t/60)).padStart(2,'0') + ':' + String(Math.floor(t%60)).padStart(2,'0');
+    }
+
+    function render(){
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora Necio</title>
+  <style>
+    :root{
+      --bg:#0c0f10;
+      --panel1:#2d2f31;
+      --panel2:#1c1e20;
+      --metal1:#4b4f53;
+      --metal2:#232629;
+      --metal3:#6d7277;
+      --screen:#6d7f30;
+      --screen2:#566628;
+      --screenGlow:#a7c46a;
+      --text:#e9efe0;
+      --btn:#3a3d41;
+      --btn2:#222529;
+      --btnHi:#5a5f65;
+      --accent:#9fbf4d;
+      --danger:#d16f5e;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;background:#101214;font-family:Arial,Helvetica,sans-serif;color:var(--text);overflow:hidden}
+    body{
+      display:grid;
+      place-items:center;
+      background:
+        radial-gradient(circle at 20% 20%, #1b1f24 0, #0e1012 35%, #08090a 100%);
+    }
+
+    .stage{
+      width:min(96vw, 1100px);
+      height:min(96vh, 760px);
+      position:relative;
+      display:grid;
+      place-items:center;
+      padding:16px;
+    }
+
+    .wallpaper{
+      position:absolute; inset:0;
+      background: var(--user-bg, none);
+      background-size:cover;
+      background-position:center;
+      filter: saturate(.8) contrast(.9) blur(0px);
+      opacity:.18;
+      border-radius:26px;
+    }
+
+    .calc{
+      width:min(100%, 980px);
+      height:min(100%, 700px);
+      background:
+        linear-gradient(145deg, #5c6166 0%, #2c2f33 18%, #181a1d 45%, #44484d 100%);
+      border-radius:34px;
+      padding:22px;
+      position:relative;
+      box-shadow:
+        0 24px 80px rgba(0,0,0,.55),
+        inset 0 2px 0 rgba(255,255,255,.15),
+        inset 0 -8px 20px rgba(0,0,0,.55);
+      border:1px solid rgba(255,255,255,.12);
+    }
+
+    .calc:before{
+      content:"";
+      position:absolute; inset:12px;
+      border-radius:26px;
+      border:1px solid rgba(255,255,255,.06);
+      pointer-events:none;
+    }
+
+    .brand{
+      position:absolute;
+      left:34px; top:18px;
+      font-weight:700;
+      letter-spacing:.18em;
+      font-size:14px;
+      color:#ced4d8;
+      text-shadow:0 1px 0 #000;
+    }
+
+    .logo{
+      position:absolute;
+      right:34px; top:18px;
+      font-size:12px;
+      color:#aeb4b8;
+      letter-spacing:.12em;
+    }
+
+    .screen-shell{
+      height:44%;
+      border-radius:24px;
+      padding:14px;
+      background:
+        linear-gradient(180deg, #101214 0%, #2b2f33 25%, #111315 100%);
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.08),
+        inset 0 -3px 10px rgba(0,0,0,.65);
+      margin-top:20px;
+    }
+
+    .screen-frame{
+      height:100%;
+      border-radius:18px;
+      background:linear-gradient(135deg, #41454a, #1f2225);
+      padding:10px;
+      position:relative;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.06);
+    }
+
+    .screen{
+      position:relative;
+      width:100%;
+      height:100%;
+      border-radius:12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+        radial-gradient(circle at 50% 40%, rgba(173,202,111,.18), transparent 55%),
+        linear-gradient(180deg, var(--screen), var(--screen2));
+      overflow:hidden;
+      box-shadow:
+        inset 0 0 0 3px rgba(0,0,0,.55),
+        inset 0 0 24px rgba(0,0,0,.45),
+        0 0 0 1px rgba(255,255,255,.08);
+      image-rendering: pixelated;
+    }
+
+    .screen:before{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        linear-gradient(rgba(255,255,255,.02) 50%, rgba(0,0,0,.05) 50%);
+      background-size:100% 6px;
+      opacity:.35;
+      mix-blend-mode:soft-light;
+      pointer-events:none;
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      display:block;
+      image-rendering: pixelated;
+    }
+
+    .hud{
+      position:absolute;
+      inset:10px 12px auto 12px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-family: "Courier New", monospace;
+      font-size:12px;
+      color:#141813;
+      text-shadow:0 1px 0 rgba(255,255,255,.25);
+      pointer-events:none;
+      z-index:2;
+    }
+
+    .hud span{
+      background:rgba(217,231,180,.55);
+      padding:3px 6px;
+      border-radius:4px;
+      border:1px solid rgba(0,0,0,.12);
+    }
+
+    .controls{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:16px;
+      height:calc(56% - 16px);
+    }
+
+    .pad{
+      background:linear-gradient(145deg, #32363a, #17191c);
+      border-radius:24px;
+      padding:18px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -8px 18px rgba(0,0,0,.55);
+      position:relative;
+      min-height:0;
+    }
+
+    .pad-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+      color:#bcc2c7;
+      font-size:12px;
+      letter-spacing:.18em;
+    }
+
+    .btn-grid{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+      height:calc(100% - 28px);
+    }
+
+    button{
+      border:0;
+      color:#f3f3f3;
+      font-weight:700;
+      letter-spacing:.04em;
+      border-radius:14px;
+      background:
+        linear-gradient(180deg, var(--btnHi), var(--btn2));
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,.08),
+        inset 0 -5px 0 rgba(0,0,0,.45),
+        0 4px 10px rgba(0,0,0,.32);
+      cursor:pointer;
+      user-select:none;
+      position:relative;
+      transform:translateY(0);
+      transition:transform .08s ease, filter .08s ease;
+      font-size:14px;
+    }
+    button:active{
+      transform:translateY(2px);
+      filter:brightness(1.1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.08),
+        inset 0 -2px 0 rgba(0,0,0,.5),
+        0 2px 6px rgba(0,0,0,.25);
+    }
+
+    .btn-a{background:linear-gradient(180deg,#55604f,#303629)}
+    .btn-b{background:linear-gradient(180deg,#5b4f2a,#2f2917)}
+    .btn-c{background:linear-gradient(180deg,#5a3540,#2f1a20)}
+    .btn-d{background:linear-gradient(180deg,#435d61,#1e2c2f)}
+
+    .side{
+      display:grid;
+      gap:12px;
+      grid-template-rows:auto auto 1fr;
+      min-height:0;
+    }
+
+    .panel{
+      background:linear-gradient(145deg, #2f3337, #181a1d);
+      border-radius:20px;
+      padding:14px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -8px 18px rgba(0,0,0,.45);
+    }
+
+    .mini{
+      display:grid;
+      gap:10px;
+      font-size:12px;
+      color:#c7ccd0;
+    }
+
+    .file{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    input[type="file"]{
+      max-width:100%;
+      color:#dfe5ea;
+      font-size:12px;
+    }
+
+    .story{
+      font-size:12px;
+      line-height:1.45;
+      color:#d2d6da;
+    }
+
+    .story b{color:#fff}
+    .secret{
+      color:#b9e06a;
+      font-weight:700;
+    }
+
+    @media (max-width: 880px){
+      body{overflow:auto}
+      .stage{height:auto; padding:12px}
+      .calc{height:auto; min-height:900px}
+      .controls{grid-template-columns:1fr; height:auto}
+      .screen-shell{height:360px}
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <div class="wallpaper" id="wallpaper"></div>
+    <div class="calc">
+      <div class="brand">CALCULADORA NECIO</div>
+      <div class="logo">RETRO COMBAT SYSTEM</div>
+
+      <div class="screen-shell">
+        <div class="screen-frame">
+          <div class="screen">
+            <div class="hud">
+              <span id="hudLeft">VIKTOR VS HEROE</span>
+              <span id="hudCenter">PTS 000000</span>
+              <span id="hudRight">TIEMPO 00:00</span>
+            </div>
+            anvas id="game" width="640" height="320"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="pad">
+          <div class="pad-title"><span>MANDOS</span><span>BOTONES REASIGNADOS</span></div>
+          <div class="btn-grid">
+            <button class="btn-a" data-action="left">◀</button>
+            <button class="btn-a" data-action="up">▲</button>
+            <button class="btn-a" data-action="right">▶</button>
+            <button class="btn-b" data-action="attack">LUZ</button>
+
+            <button class="btn-c" data-action="dash">DASH</button>
+            <button class="btn-d" data-action="grab">CAPTURAR</button>
+            <button class="btn-d" data-action="menu">PAUSA</button>
+            <button class="btn-b" data-action="special">SILBIDO</button>
+
+            <button class="btn-a" data-action="left">◀◀</button>
+            <button class="btn-a" data-action="down">▼</button>
+            <button class="btn-a" data-action="right">▶▶</button>
+            <button class="btn-c" data-action="restart">RESET</button>
+          </div>
+        </div>
+
+        <div class="side">
+          <div class="panel mini">
+            <div class="file">
+              abel for="bgUpload">Fondo personalizable:</label>
+              <input id="bgUpload" type="file" accept="image/*">
+            </div>
+            <div>Sube una imagen para usarla como fondo detrás de la calculadora.</div>
+          </div>
+
+          <div class="panel story">
+            <b>Historia:</b> Viktor es el villano. El héroe vuela y lanza ataques desde arriba, así que tu tarea es esquivar, cerrar distancia y atrapar momentos de luz para contraatacar. Cada tanto aparecen esferas luminosas que sirven para disparar al héroe. Si sobrevives 5 minutos seguidos, aparece el modo secreto: Viktor debe ir por pasto de cancha para cocinarle la cena perfecta a sus robots vegetarianos. El objetivo cambia, pero el control sigue siendo el mismo.
+            <br><br>
+            <span class="secret">Nivel secreto: roba pasto, esquiva al guardia y completa la entrega.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const hudLeft = document.getElementById('hudLeft');
+    const hudCenter = document.getElementById('hudCenter');
+    const hudRight = document.getElementById('hudRight');
+    const wallpaper = document.getElementById('wallpaper');
+
+    const W = canvas.width, H = canvas.height;
+    const keys = new Set();
+    let running = true, last = performance.now(), start = performance.now(), paused = false;
+    let points = 0, heroHP = 8, villainHP = 3, secretUnlocked = false, secretMode = false;
+    let attackCooldown = 0, spawnLight = 0, enemyTimer = 0, captureTimer = 0, grass = 0, notice = 0;
+    const enemyBullets = [], playerBullets = [], particles = [], clouds = [], fences = [];
+
+    const player = {x:120, y:H-72, w:20, h:22, vx:0, vy:0, onGround:true, dash:0, inv:0, facing:1};
+    const hero = {x:520, y:88, w:24, h:20, vx:-0.7, vy:0, t:0, dive:0};
+    const grassPatch = {x:W+30, y:H-50, w:74, h:18, taken:false};
+
+    for(let i=0;i<5;i++) clouds.push({x:Math.random()*W, y:20+Math.random()*80, s:.5+Math.random()*.7});
+    for(let i=0;i<6;i++) fences.push({x:i*110, y:H-28, w:60+Math.random()*35});
+
+    function resetGame(){
+      points = 0; heroHP = 8; villainHP = 3; secretUnlocked = false; secretMode = false;
+      attackCooldown = 0; spawnLight = 0; enemyTimer = 0; captureTimer = 0; grass = 0; notice = 0;
+      player.x = 120; player.y = H-72; player.vx = player.vy = player.dash = player.inv = 0; player.onGround = true;
+      hero.x = 520; hero.y = 88; hero.vx = -0.7; hero.vy = 0; hero.t = 0; hero.dive = 0;
+      enemyBullets.length = 0; playerBullets.length = 0; particles.length = 0;
+      grassPatch.x = W+30; grassPatch.taken = false;
+    }
+
+    function input(action){
+      if(action==='restart') resetGame();
+      if(action==='menu') paused = !paused;
+      if(paused) return;
+      if(action==='left') player.vx = -2.2, player.facing = -1;
+      if(action==='right') player.vx = 2.2, player.facing = 1;
+      if(action==='up' && player.onGround){ player.vy = -6.5; player.onGround = false; }
+      if(action==='down') player.vy += 1.6;
+      if(action==='dash' && player.dash<=0){ player.dash = 28; player.inv = 10; player.vx = 5.5*player.facing; }
+      if(action==='attack' && attackCooldown<=0 && !secretMode){
+        attackCooldown = 26;
+        playerBullets.push({x:player.x + player.facing*14, y:player.y+10, vx:5.5*player.facing, life:80});
+      }
+      if(action==='special' && notice<=0){
+        notice = 60;
+        player.inv = 18;
+      }
+      if(action==='grab' && secretMode && Math.abs(player.x-grassPatch.x)<30 && Math.abs(player.y-grassPatch.y)<24){
+        grassPatch.taken = true;
+        grass += 1;
+        points += 250;
+        if(grass >= 3){
+          secretMode = false;
+          secretUnlocked = true;
+          points += 1000;
+          notice = 160;
+        }
+      }
+    }
+
+    document.querySelectorAll('button[data-action]').forEach(btn=>{
+      const a = btn.dataset.action;
+      btn.addEventListener('click', ()=>input(a));
+    });
+
+    window.addEventListener('keydown', e=>{
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+      if(e.key==='ArrowLeft') keys.add('left');
+      if(e.key==='ArrowRight') keys.add('right');
+      if(e.key==='ArrowUp') keys.add('up');
+      if(e.key==='ArrowDown') keys.add('down');
+      if(e.key===' ') keys.add('attack');
+      if(e.key==='Shift') keys.add('dash');
+      if(e.key==='Enter') input('menu');
+      if(e.key==='r') input('restart');
+    });
+    window.addEventListener('keyup', e=>{
+      keys.delete({
+        ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down', ' ':'attack', Shift:'dash'
+      }[e.key] || '');
+    });
+
+    document.getElementById('bgUpload').addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => wallpaper.style.setProperty('--user-bg', `url('${ev.target.result}')`);
+      reader.readAsDataURL(file);
+    });
+
+    function rects(a,b){
+      return a.x<a.x+a.w && b.x<b.x+b.w && a.x<a.x+a.w && a.x+a.w>b.x && a.y<a.y+a.h && a.y+a.h>b.y && a.x<b.x+b.w && a.y<b.y+b.h;
+    }
+
+    function spawnEnemyBolt(){
+      const top = 24 + Math.random()*100;
+      enemyBullets.push({x:hero.x, y:top, vx:-2.2 - Math.random()*1.2, vy:(player.y-top)*0.03, life:150});
+    }
+
+    function burst(x,y,c){
+      for(let i=0;i;i++) particles.push({x,y,vx:(Math.random()-.5)*3, vy:(Math.random()-.5)*3, life:30+Math.random()*20});
+    }
+
+    function drawPixelChar(x,y,kind){
+      ctx.fillStyle = '#111';
+      if(kind==='viktor'){
+        ctx.fillRect(x+4,y+2,8,4); ctx.fillRect(x+2,y+6,12,8); ctx.fillRect(x+4,y+14,8,6);
+        ctx.fillRect(x+0,y+8,2,5); ctx.fillRect(x+14,y+8,2,5); ctx.fillRect(x+6,y+9,2,2);
+      } else {
+        ctx.fillRect(x+4,y+2,10,4); ctx.fillRect(x+2,y+6,14,8); ctx.fillRect(x+5,y+14,8,6);
+        ctx.fillRect(x+1,y+9,2,7); ctx.fillRect(x+15,y+9,2,7); ctx.fillRect(x+7,y+9,2,2);
+      }
+    }
+
+    function update(dt){
+      if(paused) return;
+      const t = (performance.now()-start)/1000;
+      if(t > 300 && !secretUnlocked) secretMode = true;
+      if(secretMode) points += dt*2; else points += dt*6;
+
+      player.vx *= 0.85;
+      player.x += player.vx;
+      player.y += player.vy;
+      player.vy += 0.34;
+      if(player.dash>0) player.dash--;
+      if(player.inv>0) player.inv--;
+      if(attackCooldown>0) attackCooldown--;
+      if(notice>0) notice--;
+
+      if(player.y > H-72){ player.y = H-72; player.vy = 0; player.onGround = true; }
+      player.x = Math.max(10, Math.min(W-30, player.x));
+
+      hero.t += dt;
+      hero.y = 72 + Math.sin(hero.t*2.6)*26;
+      hero.x += hero.vx;
+      if(hero.x < 330) hero.vx = 1.2;
+      if(hero.x > 570) hero.vx = -1.2;
+      if(Math.random() < 0.018 + (secretMode?0.01:0)) spawnEnemyBolt();
+
+      enemyBullets.forEach(b=>{ b.x += b.vx; b.y += b.vy; b.life--; });
+      playerBullets.forEach(b=>{ b.x += b.vx; b.life--; });
+      for(let i=enemyBullets.length-1;i>=0;i--){
+        const b = enemyBullets[i];
+        if(b.life<=0 || b.x<-20 || b.x>W+20 || b.y<-20 || b.y>H+20) enemyBullets.splice(i,1);
+        else if(player.inv<=0 && b.x>player.x && b.x<player.x+player.w && b.y>player.y && b.y<player.y+player.h){
+          heroHP--;
+          burst(b.x,b.y,10);
+          player.inv = 35;
+          enemyBullets.splice(i,1);
+        }
+      }
+      for(let i=playerBullets.length-1;i>=0;i--){
+        const b = playerBullets[i];
+        if(b.life<=0 || b.x<-20 || b.x>W+20) playerBullets.splice(i,1);
+        else if(b.x>hero.x && b.x<hero.x+hero.w && b.y>hero.y && b.y<hero.y+hero.h){
+          villainHP--;
+          burst(b.x,b.y,14);
+          playerBullets.splice(i,1);
+          points += 120;
+          if(villainHP<=0){
+            points += 500;
+            villainHP = 3;
+            heroHP = 8;
+            burst(hero.x+10,hero.y+10,24);
+            hero.vx *= -1;
+          }
+        }
+      }
+
+      if(heroHP<=0){
+        heroHP = 8;
+        points += 800;
+      }
+
+      if(!secretMode && Math.random()<0.01){
+        hero.dive = 1;
+      }
+      if(hero.dive){
+        hero.y += (player.y - hero.y) * 0.05;
+        hero.x += (player.x - hero.x) * 0.03;
+        if(Math.abs(hero.x-player.x)<18 && Math.abs(hero.y-player.y)<18 && player.inv<=0){
+          player.inv = 40;
+        }
+      }
+
+      if(secretMode){
+        grassPatch.x -= 2.6;
+        if(grassPatch.x < -40){ grassPatch.x = W + 120; grassPatch.taken = false; }
+      }
+
+      particles.forEach(p=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life--; });
+      for(let i=particles.length-1;i>=0;i--) if(particles[i].life<=0) particles.splice(i,1);
+
+      if(keys.has('left')) input('left');
+      if(keys.has('right')) input('right');
+      if(keys.has('up')) input('up'), keys.delete('up');
+      if(keys.has('down')) input('down');
+      if(keys.has('attack')) input('attack'), keys.delete('attack');
+      if(keys.has('dash')) input('dash'), keys.delete('dash');
+
+      clouds.forEach(c=>{ c.x -= 0.15*c.s; if(c.x < -30) c.x = W+40, c.y = 20+Math.random()*90; });
+      if(secretMode) hudLeft.textContent = 'MODO SECRETO: PASTO';
+      else hudLeft.textContent = 'VIKTOR VS HEROE';
+      hudCenter.textContent = 'PTS ' + String(Math.floor(points)).padStart(6,'0');
+      hudRight.textContent = 'TIEMPO ' + String(Math.floor(t/60)).padStart(2,'0') + ':' + String(Math.floor(t%60)).padStart(2,'0');
+    }
+
+    function render(){
+      ctx.clearRect(0,0,W,H);
+
+      ctx.fillStyle = '#6b7b31';
+      ctx.fillRect(0,0,W,H);
+
+      clouds.forEach(c=>{
+        ctx.fillStyle = 'rgba(10,15,10,.2)';
+        ctx.fillRect(c.x, c.y, 26*c.s, 8*c.s);
+        ctx.fillRect(c.x+8*c.s, c.y-4*c.s, 14*c.s, 6*c.s);
+      });
+
+      ctx.fillStyle = '#26321a';
+      for(let i=0;i<15;i++) ctx.fillRect((i*45+((performance.now()/25)%45))%W, H-18, 28, 18);
+
+      if(secretMode){
+        ctx.fillStyle = '#405a20';
+        ctx.fillRect(grassPatch.x, grassPatch.y, grassPatch.w, grassPatch.h);
+        ctx.fillStyle = '#1a230f';
+        for(let i=0;i<12;i++) ctx.fillRect(grassPatch.x + i*6, grassPatch.y-4, 2, 8);
+        ctx.fillStyle = '#0f1409';
+        ctx.fillRect(grassPatch.x-8, grassPatch.y-10, 8, 28);
+      }
+
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0,H-22,W,22);
+      for(let i=0;i<20;i++) ctx.fillRect(i*34 + ((performance.now()/20)%34), H-24, 20, 2);
+
+      drawPixelChar(hero.x, hero.y, 'hero');
+      drawPixelChar(player.x, player.y, 'viktor');
+
+      if(player.inv%2===0){
+        ctx.fillStyle = '#000';
+        ctx.fillRect(player.x-2, player.y+20, 6, 2);
+        ctx.fillRect(player.x+16, player.y+20, 6, 2);
+      }
+
+      enemyBullets.forEach(b=>{
+        ctx.fillStyle = '#e5f4ff';
+        ctx.fillRect(b.x, b.y, 4, 4);
+        ctx.fillStyle = '#fff9b6';
+        ctx.fillRect(b.x-1, b.y-1, 2, 2);
+      });
+
+      playerBullets.forEach(b=>{
+        ctx.fillStyle = '#f0e36a';
+        ctx.fillRect(b.x, b.y, 5, 5);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(b.x+1, b.y+1, 2, 2);
+      });
+
+      particles.forEach(p=>{
+        ctx.fillStyle = 'rgba(255,25
+6';
+        ctx.fillRect(b.x-1, b.y-1, 2, 2);
+      });
+
+      playerBullets.forEach(b=>{
+        ctx.fillStyle = '#f0e36a';
+        ctx.fillRect(b.x, b.y, 5, 5);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(b.x+1, b.y+1, 2, 2);
+      });
+
+      particles.forEach(p=>{
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.fillRect(p.x|0, p.y|0, 2, 2);
+      });
+
+      if(notice>0){
+        ctx.fillStyle = 'rgba(0,0,0,.45)';
+        ctx.fillRect(88, 118, 464, 46);
+        ctx.fillStyle = '#dff2a3';
+        ctx.font = 'bold 16px monospace';
+        ctx.fillText(secretMode ? 'OBJETIVO: ROBAR PASTO PARA LOS ROBOTS' : 'ESFERAS DE LUZ DISPONIBLES', 104, 146);
+      }
+
+      ctx.fillStyle = '#000';
+      ctx.font = '12px monospace';
+      ctx.fillText('VIKTOR', player.x-2, player.y-4);
+      ctx.fillText(secretMode ? 'GRASS HEIST' : 'HEROE VOLADOR', hero.x-6, hero.y-6);
+    }
+
+    function loop(now){
+      const dt = Math.min(32, now - last);
+      last = now;
+      update(dt/16.666);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    resetGame();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
